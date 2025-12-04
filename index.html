@@ -1,648 +1,1082 @@
 <!DOCTYPE html>
-<!-- saved from url=(0042)file:///Users/mrasool/Downloads/Tasks.html -->
-<html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Priority Board</title>
-<style>
+  <meta charset="UTF-8">
+  <title>Physics-Informed GPU Aging Model</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Typography & layout styling -->
+  <style>
+    :root {
+      --bg-color: #f4f4f7;
+      --paper-color: #ffffff;
+      --accent-color: #3742fa;
+      --accent-soft: #e1e5ff;
+      --text-color: #222222;
+      --muted-color: #777777;
+      --border-color: #e0e0ea;
+      --code-bg: #f5f5fb;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.12);
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", Roboto, sans-serif;
+      --font-serif: "Georgia", "Cambria", "Times New Roman", serif;
+      --max-width: 980px;
+    }
+
     * {
-        box-sizing: border-box;
+      box-sizing: border-box;
     }
 
     body {
-        background: #050814;
-        color: #f5f7ff;
-        font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        display: flex;
-        justify-content: center;
-        padding: 20px;
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top, #eef1ff 0, var(--bg-color) 55%);
+      font-family: var(--font-sans);
+      color: var(--text-color);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
     }
 
-    #container {
-        width: 760px;
-        background: radial-gradient(circle at top left, rgba(79,140,255,0.2), transparent 60%),
-                    radial-gradient(circle at bottom right, rgba(97,216,153,0.16), transparent 60%),
-                    #0b1020;
-        padding: 18px 18px 14px 18px;
-        border-radius: 16px;
-        border: 1px solid rgba(255,255,255,0.06);
-        box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+    .page-shell {
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 16px 40px;
     }
 
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        margin-bottom: 10px;
+    .paper {
+      background: var(--paper-color);
+      max-width: var(--max-width);
+      width: 100%;
+      border-radius: 18px;
+      box-shadow: var(--shadow-soft);
+      padding: 32px 26px 32px;
+      position: relative;
     }
 
-    .title {
-        font-size: 18px;
-        font-weight: 600;
-        letter-spacing: 0.03em;
+    @media (min-width: 900px) {
+      .paper {
+        padding: 40px 56px 40px;
+      }
     }
 
-    .subtitle {
-        font-size: 11px;
-        color: #a5afc7;
+    /* Header */
+
+    .paper-header {
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 20px;
+      margin-bottom: 20px;
     }
 
-    .filter-buttons {
-        margin-top: 6px;
-        margin-bottom: 10px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
+    .paper-title {
+      font-family: var(--font-serif);
+      font-size: clamp(1.9rem, 2.4vw + 1.2rem, 2.6rem);
+      line-height: 1.15;
+      margin: 0 0 8px;
+      letter-spacing: 0.01em;
     }
 
-    .filter-buttons button {
-        background: rgba(14,19,40,0.95);
-        border-radius: 999px;
-        border: 1px solid rgba(255,255,255,0.12);
-        color: #d6ddff;
-        font-size: 11px;
-        padding: 4px 10px;
-        cursor: pointer;
+    .paper-subtitle {
+      margin: 0;
+      font-size: 0.98rem;
+      color: var(--muted-color);
     }
 
-    .filter-buttons button.active {
-        border-color: #4f8cff;
-        background: rgba(79,140,255,0.22);
-        color: #eaf0ff;
+    .paper-meta {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted-color);
     }
 
-    .filter-buttons button span.dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 4px;
-        vertical-align: middle;
+    .meta-pill {
+      padding: 3px 11px;
+      border-radius: 999px;
+      background: #f5f6ff;
+      border: 1px solid #dfe3ff;
+      color: #475569;
+      font-weight: 500;
     }
 
-    .dot-now { background: #ff7070; }
-    .dot-next { background: #ffce5a; }
-    .dot-queue { background: #61d899; }
-    .dot-support { background: #66b2ff; }
-    .dot-backlog { background: #a58bff; }
+    /* Tab navigation */
 
-    .hint {
-        font-size: 10px;
-        color: #8892aa;
-        margin-bottom: 8px;
+    .tab-nav {
+      margin: 4px 0 18px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
     }
 
-    .hint span {
-        color: #d1dbff;
+    .tab-button {
+      position: relative;
+      border: none;
+      background: transparent;
+      padding: 10px 14px;
+      margin: 0 4px -1px 0;
+      font-size: 0.86rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #6b7280;
+      cursor: pointer;
+      transition:
+        color 0.16s ease,
+        background 0.16s ease;
     }
 
-    .add-task-row {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 10px;
+    .tab-button::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: -1px;
+      height: 2px;
+      border-radius: 999px;
+      background: transparent;
+      transition: background 0.18s ease;
     }
 
-    .add-task-input {
-        flex: 1;
-        padding: 6px 10px;
-        border-radius: 8px;
-        border: 1px solid rgba(255,255,255,0.12);
-        background: #050814;
-        color: #e5e9ff;
-        font-size: 12px;
+    .tab-button:hover {
+      color: #111827;
+      background: #f8f8ff;
     }
 
-    .add-task-input::placeholder {
-        color: #6c7694;
+    .tab-button.active {
+      color: #111827;
+      background: #f9f9ff;
     }
 
-    .add-task-button {
-        padding: 6px 12px;
-        border-radius: 8px;
-        border: 1px solid #4f8cff;
-        background: #4f8cff;
-        color: #ffffff;
-        font-size: 12px;
-        cursor: pointer;
-        white-space: nowrap;
+    .tab-button.active::after {
+      background: var(--accent-color);
     }
 
-    .add-task-button:hover {
-        background: #6a9cff;
-        border-color: #6a9cff;
+    /* Main content */
+
+    .paper-body {
+      margin-top: 8px;
     }
 
-    #task-list {
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.06);
-        background: rgba(5,10,25,0.92);
-        max-height: 70vh;
-        overflow-y: auto;
-        padding-bottom: 4px;
+    .paper-section {
+      padding: 16px 0 12px;
+      scroll-margin-top: 120px;
     }
 
-    .bucket-title {
-        position: sticky;
-        top: 0;
-        padding: 8px 14px 6px 14px;
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.14em;
-        color: #9098b5;
-        background: linear-gradient(to bottom, rgba(8,12,24,0.96), rgba(8,12,24,0.88));
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        z-index: 1;
+    .section-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted-color);
+      margin-bottom: 4px;
     }
 
-    .bucket-line {
-        flex: 1;
-        height: 1px;
-        background: linear-gradient(to right, rgba(144,152,181,0.7), transparent);
+    .paper-section h2 {
+      font-family: var(--font-serif);
+      font-size: 1.45rem;
+      margin: 0 0 10px;
+      line-height: 1.25;
     }
 
-    .bucket-chip-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        display: inline-block;
+    .paper-section h3 {
+      font-family: var(--font-serif);
+      font-size: 1.12rem;
+      margin: 26px 0 6px;
     }
 
-    .task {
-        background: #131a32;
-        padding: 9px 14px 8px 14px;
-        margin: 4px 8px;
-        border-radius: 8px;
-        cursor: grab;
-        border: 1px solid rgba(255,255,255,0.05);
-        display: flex;
-        gap: 10px;
-        align-items: flex-start;
-        transition: background 0.12s ease, transform 0.06s ease, box-shadow 0.06s ease;
+    p {
+      margin: 5px 0 12px;
+      font-size: 0.98rem;
     }
 
-    .task:hover {
-        background: #182139;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.5);
-        transform: translateY(-1px);
+    ul {
+      margin: 4px 0 14px 1.1rem;
+      padding-left: 0.8rem;
     }
 
-    .task.dragging {
-        opacity: 0.4;
-        box-shadow: 0 0 0 1px #4f8cff;
+    li {
+      margin-bottom: 4px;
+      font-size: 0.96rem;
     }
 
-    .task.done {
-        background: #101427;
-        border-style: dashed;
-        border-color: rgba(170,178,205,0.8);
+    strong {
+      font-weight: 600;
     }
 
-    .task.done .task-text {
-        text-decoration: line-through;
-        color: #686f89;
+    em {
+      font-style: italic;
     }
 
-    .task-dot {
-        width: 8px;
-        height: 26px;
-        border-radius: 999px;
-        flex-shrink: 0;
-        margin-top: 2px;
+    /* Equation styling */
+
+    .equation {
+      font-family: "Latin Modern Math", "Cambria Math", "STIX Two Math",
+        var(--font-serif);
+      font-size: 0.98rem;
+      background: var(--code-bg);
+      border-radius: 8px;
+      padding: 8px 14px;
+      margin: 10px 0 14px;
+      overflow-x: auto;
     }
 
-    .task-dot.now { background: linear-gradient(to bottom, #ff7070, #ff9a7f); }
-    .task-dot.next { background: linear-gradient(to bottom, #ffce5a, #ffd88b); }
-    .task-dot.queue { background: linear-gradient(to bottom, #61d899, #8ef1bd); }
-    .task-dot.support { background: linear-gradient(to bottom, #66b2ff, #94ccff); }
-    .task-dot.backlog { background: linear-gradient(to bottom, #a58bff, #c7a6ff); }
-
-    .task-main {
-        flex: 1;
+    .equation-inline {
+      font-family: "Latin Modern Math", "Cambria Math", "STIX Two Math",
+        var(--font-serif);
     }
 
-    .task-text {
-        font-size: 12px;
-        line-height: 1.35;
+    /* Callout-style explanations */
+
+    .callout {
+      border-left: 3px solid var(--accent-color);
+      background: #f7f8ff;
+      padding: 8px 14px 10px;
+      margin: 8px 0 16px;
+      border-radius: 10px;
+      font-size: 0.94rem;
+      color: #374151;
     }
 
-    .task-meta {
-        margin-top: 4px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
+    .callout-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: #6b7280;
+      margin-bottom: 2px;
+      font-weight: 600;
     }
 
-    .pill {
-        font-size: 9px;
-        padding: 2px 7px;
-        border-radius: 999px;
-        border: 1px solid rgba(255,255,255,0.14);
-        background: rgba(5,9,22,0.9);
-        color: #cfd7f4;
-        cursor: default;
+    /* Footer */
+
+    .paper-footer {
+      border-top: 1px solid var(--border-color);
+      margin-top: 24px;
+      padding-top: 12px;
+      font-size: 0.78rem;
+      color: var(--muted-color);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
     }
 
-    .pill.bucket-now {
-        border-color: rgba(255,112,112,0.8);
-        background: rgba(255,112,112,0.08);
+    .mono {
+      font-family: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85em;
     }
 
-    .pill.bucket-next {
-        border-color: rgba(255,206,90,0.9);
-        background: rgba(255,206,90,0.08);
-    }
+    @media (max-width: 640px) {
+      .paper {
+        border-radius: 14px;
+        padding: 22px 16px 26px;
+      }
 
-    .pill.bucket-queue {
-        border-color: rgba(97,216,153,0.9);
-        background: rgba(97,216,153,0.08);
-    }
+      .paper-section h2 {
+        font-size: 1.3rem;
+      }
 
-    .pill.bucket-support {
-        border-color: rgba(102,178,255,0.9);
-        background: rgba(102,178,255,0.08);
+      .paper-section h3 {
+        font-size: 1.05rem;
+      }
     }
+  </style>
 
-    .pill.bucket-backlog {
-        border-color: rgba(165,139,255,0.9);
-        background: rgba(165,139,255,0.08);
-    }
-
-    .pill.done-pill {
-        border-style: dashed;
-        color: #aab3d2;
-    }
-
-    .pill.backlog-button {
-        cursor: pointer;
-        border-style: solid;
-        border-color: rgba(165,139,255,0.9);
-        background: rgba(165,139,255,0.14);
-    }
-
-    .pill.backlog-button:hover {
-        background: rgba(165,139,255,0.25);
-    }
-
-    .footer-note {
-        margin-top: 10px;
-        font-size: 10px;
-        color: #8a93aa;
-    }
-
-    .footer-note span {
-        color: #d3ddff;
-    }
-</style>
+  <!-- MathJax for equations -->
+  <script
+    id="MathJax-script"
+    async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
 </head>
+
 <body>
-
-<div id="container">
-    <div class="header">
-        <div>
-            <div class="title">Priority Board</div>
-            <div class="subtitle">Drag to reorder. Right click to mark done. Buckets follow position.</div>
+  <div class="page-shell">
+    <article class="paper" aria-label="Physics-informed GPU aging model">
+      <header class="paper-header">
+        <h1 class="paper-title">
+          Physics-Informed Modeling of GPU Aging from Microscopic NBTI to Macroscopic Sensor Dynamics
+        </h1>
+        <p class="paper-subtitle">
+          A unified framework that fuses semiconductor-level reaction–diffusion aging physics with
+          nonlinear sensor dynamics via a physics-informed LSTM.
+        </p>
+        <div class="paper-meta">
+          <span class="meta-pill">Physics-Informed Learning</span>
+          <span class="meta-pill">GPU Reliability</span>
+          <span class="meta-pill">NBTI &amp; Reaction–Diffusion</span>
+          <span class="meta-pill">MdRQA</span>
+          <span class="meta-pill">LSTM</span>
         </div>
-    </div>
+      </header>
 
-    <div class="filter-buttons">
-        <button data-filter="all" class="active" onclick="setFilter('all')">All</button>
-        <button data-filter="now" onclick="setFilter('now')">
-            <span class="dot dot-now"></span>Now
+      <!-- Tab navigation (scrolls to sections) -->
+      <nav class="tab-nav" aria-label="Section navigation">
+        <button class="tab-button active" data-target="abstract">
+          Abstract
         </button>
-        <button data-filter="next" onclick="setFilter('next')">
-            <span class="dot dot-next"></span>Next
+        <button class="tab-button" data-target="microscopic">
+          Microscopic Aging
         </button>
-        <button data-filter="queue" onclick="setFilter('queue')">
-            <span class="dot dot-queue"></span>Short queue
+        <button class="tab-button" data-target="macroscopic">
+          Macroscopic Dynamics
         </button>
-        <button data-filter="support" onclick="setFilter('support')">
-            <span class="dot dot-support"></span>Support
+        <button class="tab-button" data-target="fusion">
+          Physics-Informed Fusion
         </button>
-        <button data-filter="backlog" onclick="setFilter('backlog')">
-            <span class="dot dot-backlog"></span>Backlog
+        <button class="tab-button" data-target="outputs">
+          Outputs &amp; Interpretation
         </button>
-    </div>
+        <button class="tab-button" data-target="online">
+          Online Operation
+        </button>
+      </nav>
 
-    <div class="hint">
-        <span>Rule:</span> top item is Now, second is Next, a few below are Short queue, then Support for this cycle, then Backlog. Drag to change buckets.
-    </div>
+      <main class="paper-body">
+        <!-- ABSTRACT / HIGH-LEVEL INTUITION -->
+        <section id="abstract" class="paper-section">
+          <div class="section-label">Section 0</div>
+          <h2>High-Level Intuition (Abstract / Mental Model)</h2>
 
-    <div class="add-task-row">
-        <input id="new-task-input" class="add-task-input" type="text" placeholder="Add a task and press Enter or Add">
-        <button class="add-task-button" onclick="addTask()">Add</button>
-    </div>
+          <p>
+            We describe GPU aging by stitching together two views of reality into a single model.
+            At the <strong>microscopic level</strong>, we simulate how PMOS transistors slowly wear
+            out under stress using a reaction–diffusion model of NBTI, which produces a
+            time-varying threshold-voltage shift
+            <span class="equation-inline">\(\Delta V_{th}(t)\)</span>.
+            This is the physics view of how the silicon <em>should</em> age given voltage,
+            temperature, and activity.
+          </p>
 
-    <!-- your current rendered state; left intact -->
-    <div id="task-list"><div class="bucket-title"><span class="bucket-chip-dot dot-now"></span><span>NOW</span><div class="bucket-line"></div></div><div class="task" draggable="true" data-id="29"><div class="task-dot now"></div><div class="task-main"><div class="task-text">Follow up with Rebecca Martin</div><div class="task-meta"><span class="pill bucket-now">Now</span></div></div></div><div class="bucket-title"><span class="bucket-chip-dot dot-next"></span><span>NEXT</span><div class="bucket-line"></div></div><div class="task" draggable="true" data-id="30"><div class="task-dot next"></div><div class="task-main"><div class="task-text">Follow up with Maggie</div><div class="task-meta"><span class="pill bucket-next">Next</span></div></div></div><div class="bucket-title"><span class="bucket-chip-dot dot-queue"></span><span>SHORT QUEUE</span><div class="bucket-line"></div></div><div class="task" draggable="true" data-id="31"><div class="task-dot queue"></div><div class="task-main"><div class="task-text">Follow up with Mathew Kratos and other email we got from Project Olympus</div><div class="task-meta"><span class="pill bucket-queue">Short queue</span></div></div></div><div class="task" draggable="true" data-id="28"><div class="task-dot queue"></div><div class="task-main"><div class="task-text">Write a brief on GPU demo for Texas A&amp;M</div><div class="task-meta"><span class="pill bucket-queue">Short queue</span></div></div></div><div class="task" draggable="true" data-id="27"><div class="task-dot queue"></div><div class="task-main"><div class="task-text">Apply for RSAC</div><div class="task-meta"><span class="pill bucket-queue">Short queue</span></div></div></div><div class="bucket-title"><span class="bucket-chip-dot dot-support"></span><span>SUPPORT</span><div class="bucket-line"></div></div><div class="task" draggable="true" data-id="25"><div class="task-dot support"></div><div class="task-main"><div class="task-text">Rent tents for Plug n Play</div><div class="task-meta"><span class="pill bucket-support">Support</span></div></div></div><div class="task" draggable="true" data-id="2"><div class="task-dot support"></div><div class="task-main"><div class="task-text">Order Tensor Machines stickers for the Plug and Play summit</div><div class="task-meta"><span class="pill bucket-support">Support</span></div></div></div><div class="task" draggable="true" data-id="3"><div class="task-dot support"></div><div class="task-main"><div class="task-text">Send social media feature items to Lauren</div><div class="task-meta"><span class="pill bucket-support">Support</span></div></div></div><div class="task" draggable="true" data-id="4"><div class="task-dot support"></div><div class="task-main"><div class="task-text">Send pilot proposal to Cato Digital</div><div class="task-meta"><span class="pill bucket-support">Support</span></div></div></div><div class="task" draggable="true" data-id="5"><div class="task-dot support"></div><div class="task-main"><div class="task-text">Ask Lauren for one to one mentoring and VC introductions</div><div class="task-meta"><span class="pill bucket-support">Support</span></div></div></div><div class="bucket-title"><span class="bucket-chip-dot dot-backlog"></span><span>BACKLOG</span><div class="bucket-line"></div></div><div class="task" draggable="true" data-id="6"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Follow up with BAE for a technical contact and call</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span></div></div></div><div class="task" draggable="true" data-id="7"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Watch Plug and Play prep or training session and take notes</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span></div></div></div><div class="task" draggable="true" data-id="8"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Follow up with Joshua Haims with thanks and next steps</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span></div></div></div><div class="task" draggable="true" data-id="9"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Recheck Boost thread from Liam introduction and update status</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span></div></div></div><div class="task" draggable="true" data-id="10"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">File action of sole incorporator</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span></div></div></div><div class="task" draggable="true" data-id="11"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Pass board resolution for key actions and roles</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span></div></div></div><div class="task" draggable="true" data-id="12"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Sign board consent to appoint officers</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span></div></div></div><div class="task" draggable="true" data-id="13"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Maintain light follow up with Amy on your priority list</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span></div></div></div><div class="task" draggable="true" data-id="14"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Contact Nvidia Ventures and open a thread</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span></div></div></div><div class="task done" draggable="true" data-id="15"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Build the investor performa</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span><span class="pill done-pill">Done</span><span class="pill backlog-button">Send to backlog</span></div></div></div><div class="task done" draggable="true" data-id="16"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Target meetings in Brella for Plug and Play</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span><span class="pill done-pill">Done</span><span class="pill backlog-button">Send to backlog</span></div></div></div><div class="task done" draggable="true" data-id="17"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Send engineer questions to Cato Digital</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span><span class="pill done-pill">Done</span><span class="pill backlog-button">Send to backlog</span></div></div></div><div class="task done" draggable="true" data-id="18"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Send performa to Joakim at Construct Capital</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span><span class="pill done-pill">Done</span><span class="pill backlog-button">Send to backlog</span></div></div></div><div class="task done" draggable="true" data-id="19"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Send performa and answers to Shane at Punch Capital</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span><span class="pill done-pill">Done</span><span class="pill backlog-button">Send to backlog</span></div></div></div><div class="task done" draggable="true" data-id="20"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Create AWS account and send AWS account ID to Yashil</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span><span class="pill done-pill">Done</span><span class="pill backlog-button">Send to backlog</span></div></div></div><div class="task done" draggable="true" data-id="21"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Send performa to Denver Ventures</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span><span class="pill done-pill">Done</span><span class="pill backlog-button">Send to backlog</span></div></div></div><div class="task done" draggable="true" data-id="22"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Coordinate final Plug and Play logistics with Avad Sawda</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span><span class="pill done-pill">Done</span><span class="pill backlog-button">Send to backlog</span></div></div></div><div class="task done" draggable="true" data-id="23"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Reach out to Maggie at Shield Cap</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span><span class="pill done-pill">Done</span><span class="pill backlog-button">Send to backlog</span></div></div></div><div class="task done" draggable="true" data-id="24"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Open Rho bank account</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span><span class="pill done-pill">Done</span><span class="pill backlog-button">Send to backlog</span></div></div></div><div class="task done" draggable="true" data-id="26"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Respond to Maggie</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span><span class="pill done-pill">Done</span><span class="pill backlog-button">Send to backlog</span></div></div></div><div class="task done" draggable="true" data-id="1"><div class="task-dot backlog"></div><div class="task-main"><div class="task-text">Apply for Schwartz program with current deck and performa</div><div class="task-meta"><span class="pill bucket-backlog">Backlog</span><span class="pill done-pill">Done</span><span class="pill backlog-button">Send to backlog</span></div></div></div></div>
+          <p>
+            At the <strong>macroscopic level</strong>, we observe what the GPU is actually doing
+            through sensors: temperature, currents, voltages, utilization, and electromagnetic
+            activity. From these we extract nonlinear dynamical features (MdRQA) that tell us
+            whether the system is in stable, repetitive regimes or wandering into chaotic,
+            potentially damaging behavior.
+          </p>
 
-    <div class="footer-note">
-        <span>Interpretation:</span> Now and Next are single-focus. Short queue are immediate candidates. Support holds enablers for this week. Backlog is everything that should not steal focus today.
-    </div>
-</div>
+          <p>
+            A <strong>physics-informed LSTM</strong> then fuses these two layers: it sees both the
+            physics-based \(\Delta V_{th}\) trajectories (from reaction–diffusion) and the real
+            sensor-derived features (including MdRQA). It is trained so that its predictions are
+            consistent with both the measured sensor data <em>and</em> the underlying aging
+            physics. The outputs are three things: an estimated
+            \(\Delta V_{th}(t)\) (a proxy for microscopic damage), a normalized “operational age”
+            \(A(t)\) in \([0, 1]\), and a remaining useful life (RUL) estimate in the same time
+            units as the input timeline. The model runs continuously, updating these quantities as
+            new sensor data arrive.
+          </p>
+        </section>
 
-<script>
-    // ----------------------
-    // TASK DATA (ordered and struck as in your current board)
-    // ----------------------
-    let tasks = [
-        { id: 1,  text: "Apply for Schwartz program with current deck and performa", done: false },
-        { id: 2,  text: "Order Tensor Machines stickers for the Plug and Play summit", done: false },
-        { id: 3,  text: "Send social media feature items to Lauren", done: false },
-        { id: 4,  text: "Send pilot proposal to Cato Digital", done: false },
-        { id: 5,  text: "Ask Lauren for one to one mentoring and VC introductions", done: false },
-        { id: 6,  text: "Follow up with BAE for a technical contact and call", done: false },
-        { id: 7,  text: "Watch Plug and Play prep or training session and take notes", done: false },
-        { id: 8,  text: "Follow up with Joshua Haims with thanks and next steps", done: false },
-        { id: 9,  text: "Recheck Boost thread from Liam introduction and update status", done: false },
-        { id: 10, text: "File action of sole incorporator", done: false },
-        { id: 11, text: "Pass board resolution for key actions and roles", done: false },
-        { id: 12, text: "Sign board consent to appoint officers", done: false },
-        { id: 13, text: "Maintain light follow up with Amy on your priority list", done: false },
-        { id: 14, text: "Contact Nvidia Ventures and open a thread", done: false },
-        { id: 15, text: "Build the investor performa", done: true },
-        { id: 16, text: "Target meetings in Brella for Plug and Play", done: true },
-        { id: 17, text: "Send engineer questions to Cato Digital", done: true },
-        { id: 18, text: "Send performa to Joakim at Construct Capital", done: true },
-        { id: 19, text: "Send performa and answers to Shane at Punch Capital", done: true },
-        { id: 20, text: "Create AWS account and send AWS account ID to Yashil", done: true },
-        { id: 21, text: "Send performa to Denver Ventures", done: true },
-        { id: 22, text: "Coordinate final Plug and Play logistics with Avad Sawda", done: true }
-    ];
+        <!-- 1. MICROSCOPIC AGING -->
+        <section id="microscopic" class="paper-section">
+          <div class="section-label">Section 1</div>
+          <h2>Microscopic NBTI Aging via Reaction–Diffusion</h2>
 
-    const STORAGE_KEY = "priorityBoardState_v1";
+          <p>
+            At the transistor level, we model degradation dominated by
+            <strong>negative bias temperature instability (NBTI)</strong> in PMOS devices.
+            Long-term electrical and thermal stress generates interface traps and shifts the
+            threshold voltage \(V_{th}\) upward. The incremental shift
+          </p>
 
-    function loadState() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (!raw) return;
-            const data = JSON.parse(raw);
-            if (Array.isArray(data)) {
-                const valid = data.every(t =>
-                    typeof t.id === "number" &&
-                    typeof t.text === "string" &&
-                    typeof t.done === "boolean"
-                );
-                if (valid) {
-                    tasks = data;
-                }
-            }
-        } catch (e) {
-            // ignore storage errors
-        }
-    }
+          <p class="equation">
+            \[
+            \Delta V_{th}(t) = V_{th}(t) - V_{th,0}
+            \]
+          </p>
 
-    function saveState() {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-        } catch (e) {
-            // ignore storage errors
-        }
-    }
+          <p>
+            acts as a microscopic measure of accumulated damage.
+          </p>
 
-    // load from storage if present
-    loadState();
+          <p>
+            We adopt a <strong>reaction–diffusion (R–D)</strong> description that captures:
+          </p>
 
-    let nextId = tasks.reduce((max, t) => Math.max(max, t.id), 0) + 1;
+          <ul>
+            <li>
+              <strong>Stress phase</strong>: trap generation when the device is under negative gate
+              bias \((V_{gs} = -V_{dd})\).
+            </li>
+            <li>
+              <strong>Recovery phase</strong>: partial annealing when the device is unbiased
+              \((V_{gs} = 0)\).
+            </li>
+          </ul>
 
-    // ----------------------
-    // BUCKET MAPPING BY INDEX
-    // ----------------------
-    function bucketForIndex(i) {
-        if (i === 0) return "now";          // single focus
-        if (i === 1) return "next";         // single next item
-        if (i >= 2 && i <= 4) return "queue";    // short queue: next few
-        if (i >= 5 && i <= 9) return "support";  // support work for this cycle
-        return "backlog";                        // rest
-    }
+          <p>
+            During stress, the threshold voltage follows
+          </p>
 
-    function bucketLabel(key) {
-        if (key === "now") return "Now";
-        if (key === "next") return "Next";
-        if (key === "queue") return "Short queue";
-        if (key === "support") return "Support";
-        if (key === "backlog") return "Backlog";
-        return "";
-    }
+          <p class="equation">
+            \[
+            V_{th,\text{stress}}(t)
+            = \big(K_v\, t_{\text{stress}}^{1/2} + 2n V_{th,0}\big)^{2n}
+            \]
+          </p>
 
-    function bucketDotClass(key) {
-        if (key === "now") return "dot-now";
-        if (key === "next") return "dot-next";
-        if (key === "queue") return "dot-queue";
-        if (key === "support") return "dot-support";
-        if (key === "backlog") return "dot-backlog";
-        return "";
-    }
+          <p>where:</p>
 
-    let filter = "all";
-    let draggedId = null;
+          <ul>
+            <li>\(K_v\) encodes dependence on electric field, supply voltage \(V_{dd}\), and temperature \(T\),</li>
+            <li>\(n\) is a time exponent (typically \(n \approx 1/6\)),</li>
+            <li>\(t_{\text{stress}}\) is the cumulative time under stress,</li>
+            <li>\(V_{th,0}\) is the initial threshold voltage.</li>
+          </ul>
 
-    // ----------------------
-    // RENDER
-    // ----------------------
-    function render() {
-        const list = document.getElementById("task-list");
-        list.innerHTML = "";
+          <div class="callout">
+            <div class="callout-title">Intuition</div>
+            <p>
+              The longer and harder you stress the device, the more traps form and the larger
+              \(V_{th}\) becomes, following a sublinear power law in time.
+            </p>
+          </div>
 
-        let visibleTasks = tasks;
-        if (filter !== "all") {
-            visibleTasks = tasks.filter((t, index) => bucketForIndex(index) === filter);
-        }
+          <p>
+            During recovery \((V_{gs} = 0)\), as traps partially anneal, we use
+          </p>
 
-        let lastBucket = null;
+          <p class="equation">
+            \[
+            V_{th,\text{recov}}(t)
+            = V_{th,\text{stress}}
+            \left(
+              1 - 2\xi_1 t_e +
+              \frac{\xi_2 C t_{\text{recov}}}{(1+\delta)t_{ox} + \sqrt{Ct}}
+            \right)
+            \]
+          </p>
 
-        visibleTasks.forEach(t => {
-            const indexInFull = tasks.indexOf(t);
-            const bucket = bucketForIndex(indexInFull);
+          <p>with:</p>
 
-            if (bucket !== lastBucket) {
-                const header = document.createElement("div");
-                header.className = "bucket-title";
+          <ul>
+            <li>\(\xi_1, \xi_2, \delta\): material- and process-dependent constants,</li>
+            <li>\(t_{ox}\): oxide thickness,</li>
+            <li>\(t_e\): effective oxide thickness,</li>
+            <li>\(t_{\text{recov}}\): cumulative time in recovery,</li>
+            <li>\(C\): diffusion-related constant.</li>
+          </ul>
 
-                const dot = document.createElement("span");
-                dot.className = "bucket-chip-dot " + bucketDotClass(bucket);
+          <p>
+            This expression captures the fact that some of the NBTI damage relaxes over time, but
+            not fully.
+          </p>
 
-                const label = document.createElement("span");
-                label.textContent = bucketLabel(bucket).toUpperCase();
+          <p>
+            Over many stress–recovery cycles, we iterate:
+          </p>
 
-                const line = document.createElement("div");
-                line.className = "bucket-line";
+          <p class="equation">
+            \[
+            V_{th,i}^{\text{stress}}
+            = \Big( K_v (\alpha T_{clk})^{2n} + V_{th,i-1}^{\text{recov}} \Big)^{2n},
+            \]
+          </p>
 
-                header.appendChild(dot);
-                header.appendChild(label);
-                header.appendChild(line);
+          <p class="equation">
+            \[
+            V_{th,i}^{\text{recov}}
+            = V_{th,i}^{\text{stress}}
+            \left(
+              1 - 2\xi_1 t_e +
+              \frac{\xi_2 C (1-\alpha)T_{clk}}{(1+\delta)t_{ox} + \sqrt{C_i T_{clk}}}
+            \right)
+            \]
+          </p>
 
-                list.appendChild(header);
-                lastBucket = bucket;
-            }
+          <p>where:</p>
 
-            const div = document.createElement("div");
-            div.className = "task";
-            div.draggable = (filter === "all");
-            div.dataset.id = t.id;
+          <ul>
+            <li>\(i\) indexes cycles,</li>
+            <li>\(T_{clk}\) is the clock period (or a chosen stress-update interval),</li>
+            <li>\(\alpha\) is the <strong>duty cycle</strong> (fraction of time under stress).</li>
+          </ul>
 
-            if (t.done) {
-                div.classList.add("done");
-            }
+          <p>
+            So if we know \(\alpha\), \(V_{dd}\), \(T\), and process parameters, we can generate a
+            <strong>microscopic \(\Delta V_{th}(t)\) curve</strong> that represents the idealized
+            aging trajectory of the transistor ensemble.
+          </p>
 
-            const dotBar = document.createElement("div");
-            dotBar.className = "task-dot " + bucket;
+          <h3>From Hidden Transistor Stress to Effective Duty Cycle</h3>
 
-            const main = document.createElement("div");
-            main.className = "task-main";
+          <p>
+            In a real GPU, we do <strong>not</strong> see individual gate biases. Instead, we
+            observe:
+          </p>
 
-            const text = document.createElement("div");
-            text.className = "task-text";
-            text.textContent = t.text;
+          <ul>
+            <li>board-level voltages \(V_{dd}(t)\) and currents \(I(t)\),</li>
+            <li>temperature sensors \(T(t)\),</li>
+            <li>utilization metrics \(U(t)\),</li>
+            <li>electromagnetic activity \(E(t)\) or similar.</li>
+          </ul>
 
-            const meta = document.createElement("div");
-            meta.className = "task-meta";
+          <p>
+            We use those as <strong>proxies</strong> to construct an effective stress-intensity
+            function:
+          </p>
 
-            const pillBucket = document.createElement("span");
-            pillBucket.className = "pill bucket-" + bucket;
-            pillBucket.textContent = bucketLabel(bucket);
+          <p class="equation">
+            \[
+            \sigma(t) = f(V_{dd}(t)) \, g(T(t)) \, h(U(t))
+            \]
+          </p>
 
-            meta.appendChild(pillBucket);
+          <p>
+            where each of \(f, g, h\) is a calibrated acceleration factor (e.g., Arrhenius-like in
+            \(T\), power-law in \(V\), linear or saturating in activity).
+          </p>
 
-            if (t.done) {
-                const donePill = document.createElement("span");
-                donePill.className = "pill done-pill";
-                donePill.textContent = "Done";
-                meta.appendChild(donePill);
+          <p>
+            From \(\sigma(t)\), we define an effective duty cycle over a window of length \(T\):
+          </p>
 
-                const sendBacklog = document.createElement("span");
-                sendBacklog.className = "pill backlog-button";
-                sendBacklog.textContent = "Send to backlog";
-                sendBacklog.onclick = function(e) {
-                    e.stopPropagation();
-                    sendToBacklog(t.id);
-                };
-                meta.appendChild(sendBacklog);
-            }
+          <p class="equation">
+            \[
+            \alpha_{\text{eff}} = \frac{1}{T} \int_0^T \sigma(t)\, dt.
+            \]
+          </p>
 
-            main.appendChild(text);
-            main.appendChild(meta);
+          <p>
+            We feed \(\alpha_{\text{eff}}\), along with \(V_{dd}(t)\) and \(T(t)\), into the R–D
+            model to generate <strong>simulated \(\Delta V_{th}\) trajectories</strong>:
+          </p>
 
-            div.appendChild(dotBar);
-            div.appendChild(main);
+          <p class="equation">
+            \[
+            \Delta V_{th}^{\text{phys}}(t)
+            \]
+          </p>
 
-            // right click to toggle done
-            div.oncontextmenu = function(e) {
-                e.preventDefault();
-                toggleDone(t.id);
-            };
+          <p>
+            These are our <strong>physics-based prior</strong> on how the silicon should age given
+            the measured stress conditions.
+          </p>
+        </section>
 
-            // drag events (only active when filter is "all")
-            if (filter === "all") {
-                div.addEventListener("dragstart", function(e) {
-                    draggedId = t.id;
-                    div.classList.add("dragging");
-                    if (e.dataTransfer) {
-                        e.dataTransfer.effectAllowed = "move";
-                        e.dataTransfer.setData("text/plain", String(t.id));
-                    }
-                });
+        <!-- 2. MACROSCOPIC DYNAMICS -->
+        <section id="macroscopic" class="paper-section">
+          <div class="section-label">Section 2</div>
+          <h2>Macroscopic Dynamics via MdRQA</h2>
 
-                div.addEventListener("dragend", function() {
-                    div.classList.remove("dragging");
-                    draggedId = null;
-                });
+          <p>
+            Real GPUs live in a messy world: cooling control loops, workload bursts, fan
+            hysteresis, and power delivery noise make behavior deviate from the neat R–D
+            trajectory. To quantify this messy, emergent behavior, we apply
+            <strong>multidimensional recurrence quantification analysis (MdRQA)</strong> on the
+            multivariate sensor stream.
+          </p>
 
-                div.addEventListener("dragover", function(e) {
-                    e.preventDefault();
-                });
+          <p>
+            We collect the relevant signals into a vector
+          </p>
 
-                div.addEventListener("drop", function(e) {
-                    e.preventDefault();
-                    const fromId = draggedId || parseInt((e.dataTransfer && e.dataTransfer.getData("text/plain")) || "NaN", 10);
-                    const toId = t.id;
-                    if (!isNaN(fromId) && fromId !== toId) {
-                        reorder(fromId, toId);
-                    }
-                });
-            }
+          <p class="equation">
+            \[
+            X(t) = [T(t), I(t), V(t), E(t), U(t)] \in \mathbb{R}^d
+            \]
+          </p>
 
-            list.appendChild(div);
+          <p>
+            (where the exact components can be extended as needed). Over a window, we view this as
+            a trajectory in a reconstructed phase space, and build the
+            <strong>recurrence matrix</strong>:
+          </p>
+
+          <p class="equation">
+            \[
+            R_{ij} = \Theta(\varepsilon - \| X_i - X_j \|),
+            \]
+          </p>
+
+          <p>where:</p>
+
+          <ul>
+            <li>\(X_i = X(t_i)\),</li>
+            <li>\(\|\cdot\|\) is Euclidean distance (or another norm),</li>
+            <li>\(\varepsilon\) is a neighborhood radius,</li>
+            <li>\(\Theta\) is the Heaviside step function (1 if inside the neighborhood, 0 otherwise).</li>
+          </ul>
+
+          <p>
+            From \(R_{ij}\), we compute standard MdRQA scalars:
+          </p>
+
+          <ul>
+            <li>
+              <strong>RR</strong> (recurrence rate): fraction of recurrent points; how often the
+              system revisits previous states.
+            </li>
+            <li>
+              <strong>DET</strong> (determinism): fraction of recurrence points forming diagonal
+              lines; measures predictability or periodicity.
+            </li>
+            <li>
+              <strong>LAM</strong> (laminarity): captures “sticking” behavior in particular states.
+            </li>
+            <li>
+              <strong>ENTR</strong> (entropy of diagonal line lengths): complexity of the temporal
+              patterns.
+            </li>
+            <li>
+              <strong>TT</strong> (trapping time): average duration of laminar episodes.
+            </li>
+          </ul>
+
+          <h3>Interpretation of MdRQA Features</h3>
+
+          <p>
+            Interpretation:
+          </p>
+
+          <ul>
+            <li>
+              High DET, low ENTR &rarr; stable, repetitive operating conditions (e.g., steady HPC
+              workloads, well-behaved cooling).
+            </li>
+            <li>
+              Dropping DET, rising ENTR &rarr; transitions, regime shifts, or emerging instability
+              (e.g., thermal runaways, throttling, erratic power cycling).
+            </li>
+          </ul>
+
+          <p>
+            These MdRQA descriptors compress the <strong>macroscopic temporal structure</strong> of
+            the system into a feature vector:
+          </p>
+
+          <p class="equation">
+            \[
+            Z(t) = [\text{RR}(t), \text{DET}(t), \text{LAM}(t), \text{ENTR}(t), \text{TT}(t), \dots]
+            \]
+          </p>
+
+          <p>
+            over sliding windows.
+          </p>
+        </section>
+
+        <!-- 3. PHYSICS-INFORMED LSTM FUSION -->
+        <section id="fusion" class="paper-section">
+          <div class="section-label">Section 3</div>
+          <h2>Physics-Informed LSTM Fusion</h2>
+
+          <p>
+            The <strong>fusion layer</strong> is a physics-informed LSTM that takes both:
+          </p>
+
+          <ol>
+            <li>
+              The <strong>physics-based microscopic aging trajectory</strong>
+              \(\Delta V_{th}^{\text{phys}}(t)\) from the R–D model, and
+            </li>
+            <li>
+              The <strong>macroscopic feature streams</strong> from sensors (MdRQA features \(Z(t)\)
+              plus simpler statistics such as means, variances, gradients of \(T\), \(V\), \(I\),
+              etc.).
+            </li>
+          </ol>
+
+          <p>
+            Let’s define, at each time step \(t\), a combined input feature vector:
+          </p>
+
+          <p class="equation">
+            \[
+            x_t = \big[ Z(t), \text{stats}(X(t)), \Delta V_{th}^{\text{phys}}(t) \big]
+            \in \mathbb{R}^p.
+            \]
+          </p>
+
+          <p>
+            The LSTM processes sequences \((x_{t-L+1}, \dots, x_t)\) of length \(L\) and produces
+            outputs \(y_t\). Its internal recurrence is:
+          </p>
+
+          <p class="equation">
+            \[
+            (h_t, c_t) = \text{LSTM}(x_t, h_{t-1}, c_{t-1}),
+            \]
+          </p>
+
+          <p class="equation">
+            \[
+            y_t = W_o h_t + b_o,
+            \]
+          </p>
+
+          <p>where:</p>
+
+          <ul>
+            <li>\(h_t\) is the hidden state,</li>
+            <li>\(c_t\) is the cell state (long-term memory),</li>
+            <li>\(W_o, b_o\) are output layer parameters,</li>
+            <li>\(y_t \in \mathbb{R}^m\) is the output vector at time \(t\).</li>
+          </ul>
+
+          <h3>Physics-Informed Loss</h3>
+
+          <p>
+            Training uses a <strong>composite loss</strong>:
+          </p>
+
+          <p class="equation">
+            \[
+            \mathcal{L}_{\text{total}}
+            = \mathcal{L}_{\text{data}} + \lambda \mathcal{L}_{\text{physics}}.
+            \]
+          </p>
+
+          <ul>
+            <li>
+              \(\mathcal{L}_{\text{data}}\) is the data misfit: e.g., MSE between predicted and
+              observed health indicators (from accelerated tests, periodic benchmarks, or known
+              failure points).
+            </li>
+            <li>
+              \(\mathcal{L}_{\text{physics}}\) penalizes deviations from the R–D model. A simple
+              form is:
+            </li>
+          </ul>
+
+          <p class="equation">
+            \[
+            \mathcal{L}_{\text{physics}}
+            = \frac{1}{N} \sum_t
+            \big\| \widehat{\Delta V_{th}}(t)
+            - \Delta V_{th}^{\text{phys}}(t) \big\|^2,
+            \]
+          </p>
+
+          <p>
+            where \(\widehat{\Delta V_{th}}(t)\) is the LSTM’s predicted \(\Delta V_{th}\) component.
+          </p>
+
+          <p>
+            \(\lambda\) is a tunable coefficient (selected via Bayesian optimization) that
+            balances <strong>data fit</strong> (match reality) versus
+            <strong>physics adherence</strong> (respect NBTI kinetics).
+          </p>
+
+          <div class="callout">
+            <div class="callout-title">Effect of the Physics Term</div>
+            <p>
+              The R–D model provides a <strong>prior trajectory</strong> for how aging “should”
+              evolve. The LSTM uses sensor dynamics (via MdRQA and statistics) to learn systematic
+              deviations from that prior under real workloads and environmental conditions. The
+              physics term in the loss keeps the learned mapping from drifting into unphysical
+              nonsense.
+            </p>
+          </div>
+        </section>
+
+        <!-- 4. OUTPUTS & INTERPRETATION -->
+        <section id="outputs" class="paper-section">
+          <div class="section-label">Section 4</div>
+          <h2>Outputs and Their Interpretation (Engineering View)</h2>
+
+          <p>
+            The model’s prediction is explicitly <strong>multidimensional</strong>. At each time
+            \(t\), it outputs a health vector:
+          </p>
+
+          <p class="equation">
+            \[
+            y_t = \big[
+            \widehat{\Delta V_{th}}(t), \;
+            \widehat{A}(t), \;
+            \widehat{\text{RUL}}(t) \big]
+            \in \mathbb{R}^3.
+            \]
+          </p>
+
+          <p>
+            Optionally, there may be a fourth head for discrete health classes, but let’s pin down
+            the core three:
+          </p>
+
+          <ol>
+            <li>
+              <strong>Estimated threshold-voltage shift</strong><br>
+              <p class="equation">
+                \[
+                \widehat{\Delta V_{th}}(t)
+                \]
+              </p>
+              <ul>
+                <li>Units: volts.</li>
+                <li>
+                  Interpretation: model’s best estimate of how far the effective \(V_{th}\) of the
+                  critical path devices has drifted from its fresh value.
+                </li>
+                <li>
+                  This is a <strong>physics-aligned proxy</strong> for microscopic damage and ties
+                  directly back to timing margin.
+                </li>
+              </ul>
+            </li>
+
+            <li>
+              <strong>Operational age index</strong><br>
+              <p>
+                We define a critical threshold shift \(\Delta V_{th,\text{crit}}\) corresponding to
+                end-of-life (e.g., when timing violations exceed a specified rate). The age index is:
+              </p>
+
+              <p class="equation">
+                \[
+                \widehat{A}(t)
+                = \frac{\widehat{\Delta V_{th}}(t)}{\Delta V_{th,\text{crit}}}.
+                \]
+              </p>
+
+              <ul>
+                <li>Dimensionless fraction, ideally clipped to \([0, 1.2]\) or similar.</li>
+                <li>\(\widehat{A}(t) \approx 0\): nearly fresh.</li>
+                <li>\(\widehat{A}(t) = 1\): nominal end-of-life boundary.</li>
+                <li>\(\widehat{A}(t) &gt; 1\): device is operating beyond the modeled safe aging envelope.</li>
+              </ul>
+            </li>
+
+            <li>
+              <strong>Remaining Useful Life (RUL)</strong><br>
+              <p class="equation">
+                \[
+                \widehat{\text{RUL}}(t)
+                \]
+              </p>
+
+              <ul>
+                <li>
+                  Units: <strong>same time units as the model’s time base</strong>, e.g., hours of
+                  operation or equivalent stress hours.
+                </li>
+                <li>
+                  Definition: predicted time until \(\widehat{A}(t)\) reaches 1 under
+                  <strong>learned typical future stress patterns</strong> (i.e., given how this
+                  device has historically been used).
+                </li>
+                <li>
+                  In practice, the LSTM learns a mapping from the current latent state \(h_t\) and
+                  recent trajectory to a scalar horizon until failure.
+                </li>
+              </ul>
+            </li>
+          </ol>
+
+          <p>
+            Concretely, you can view the network as implementing a function
+          </p>
+
+          <p class="equation">
+            \[
+            F_\theta : \mathbb{R}^{L \times p} \rightarrow \mathbb{R}^3,
+            \]
+          </p>
+
+          <p>
+            such that
+          </p>
+
+          <p class="equation">
+            \[
+            y_t = F_\theta(x_{t-L+1:t}) =
+            \big(
+              \widehat{\Delta V_{th}}(t),
+              \widehat{A}(t),
+              \widehat{\text{RUL}}(t)
+            \big).
+            \]
+          </p>
+
+          <p>
+            So if you “compile and run” this model in software, for each time \(t\) you feed it
+            the last \(L\) timesteps of features and it returns this triplet.
+          </p>
+
+          <p>
+            Optionally, we can add a <strong>classification head</strong>:
+          </p>
+
+          <p class="equation">
+            \[
+            \widehat{s}(t) = \text{softmax}(W_s h_t + b_s) \in \mathbb{R}^K
+            \]
+          </p>
+
+          <p>
+            where \(K\) is the number of discrete health states (e.g., {healthy, warning,
+            critical}). It characterizes the continuous outputs from the model.
+          </p>
+        </section>
+
+        <!-- 5. ONLINE OPERATION -->
+        <section id="online" class="paper-section">
+          <div class="section-label">Section 5</div>
+          <h2>Deployment and Operational Expectations</h2>
+
+          <p>
+            In deployment, the framework operates as a streaming system with a fixed update period
+            \(\Delta t\) (e.g., once per second, once per minute):
+          </p>
+
+          <ol>
+            <li>
+              <strong>Sensor ingestion</strong><br>
+              At each time \(t\):
+              <ul>
+                <li>Read raw sensors \(X(t) = [T, I, V, E, U, \dots]\).</li>
+              </ul>
+            </li>
+
+            <li>
+              <strong>Feature construction</strong> (over a sliding window of length \(L \cdot \Delta t\)):<br>
+              <ul>
+                <li>
+                  Compute statistical summaries (means, variances, derivatives) of \(X\) over the
+                  window.
+                </li>
+                <li>
+                  Run MdRQA over the same window to obtain \(Z(t)\).
+                </li>
+                <li>
+                  Use the windowed stress surrogate \(\sigma(t')\) to update
+                  \(\alpha_{\text{eff}}\) and propagate the R–D model, obtaining
+                  \(\Delta V_{th}^{\text{phys}}(t)\).
+                </li>
+              </ul>
+            </li>
+
+            <li>
+              <strong>LSTM inference</strong><br>
+              <ul>
+                <li>
+                  Form \(x_t = [Z(t), \text{stats}(X(t)), \Delta V_{th}^{\text{phys}}(t)]\).
+                </li>
+                <li>
+                  Feed \(x_t\) and the previous states \((h_{t-1}, c_{t-1})\) into the LSTM.
+                </li>
+                <li>
+                  Get updated states \((h_t, c_t)\) and the output vector \(y_t\).
+                </li>
+              </ul>
+            </li>
+
+            <li>
+              <strong>Health outputs</strong><br>
+              <ul>
+                <li>
+                  Extract \(\widehat{\Delta V_{th}}(t)\), \(\widehat{A}(t)\), and
+                  \(\widehat{\text{RUL}}(t)\) from \(y_t\).
+                </li>
+                <li>
+                  Optionally, map \(\widehat{A}(t)\) and \(\widehat{\text{RUL}}(t)\) to health
+                  flags (e.g., “normal”, “de-rate”, “retire”).
+                </li>
+              </ul>
+            </li>
+          </ol>
+
+          <p>
+            So “continuous update of operational age” means:
+          </p>
+
+          <ul>
+            <li>Maintain the LSTM hidden state across calls.</li>
+            <li>
+              At each sensor update, recompute features, advance the physics-based
+              \(\Delta V_{th}\), perform a forward pass, and overwrite
+              \(\widehat{A}(t)\) and \(\widehat{\text{RUL}}(t)\).
+            </li>
+          </ul>
+
+          <p>
+            Those two scalars, plus \(\widehat{\Delta V_{th}}(t)\), are the
+            <strong>machine-readable contract</strong> of the model, essentially what
+            downstream scheduling, cooling, or maintenance logic will consume.
+          </p>
+        </section>
+      </main>
+
+      <footer class="paper-footer">
+        <span>Physics-informed GPU aging model conceptual specification by Muneeb Rasool</span>
+        <span class="mono">Tensor Machines, Inc</span>
+      </footer>
+    </article>
+  </div>
+
+  <!-- Tab behavior: smooth scroll & active-state sync -->
+  <script>
+    (function () {
+      const buttons = Array.from(document.querySelectorAll(".tab-button"));
+      const sections = Array.from(document.querySelectorAll(".paper-section"));
+
+      function setActiveButton(targetId) {
+        buttons.forEach((btn) => {
+          const isActive = btn.getAttribute("data-target") === targetId;
+          btn.classList.toggle("active", isActive);
         });
-    }
+      }
 
-    // ----------------------
-    // LOGIC
-    // ----------------------
-    function toggleDone(id) {
-        const t = tasks.find(x => x.id === id);
-        if (!t) return;
-        t.done = !t.done;
-        render();
-        saveState();
-    }
+      function scrollToSection(targetId) {
+        const section = document.getElementById(targetId);
+        if (!section) return;
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
 
-    function reorder(fromId, toId) {
-        const fromIndex = tasks.findIndex(t => t.id === fromId);
-        const toIndex = tasks.findIndex(t => t.id === toId);
-        if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
+      // Click behavior
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          const targetId = btn.getAttribute("data-target");
+          setActiveButton(targetId);
+          scrollToSection(targetId);
 
-        const item = tasks.splice(fromIndex, 1)[0];
-        tasks.splice(toIndex, 0, item);
-        render();
-        saveState();
-    }
-
-    function sendToBacklog(id) {
-        const index = tasks.findIndex(t => t.id === id);
-        if (index === -1) return;
-        const item = tasks.splice(index, 1)[0];
-        tasks.push(item);
-        render();
-        saveState();
-    }
-
-    // NEW BEHAVIOUR: insert new task at top of Short queue (index 2)
-    function addTask() {
-        const input = document.getElementById("new-task-input");
-        if (!input) return;
-        const text = input.value.trim();
-        if (!text) return;
-        const newTask = { id: nextId++, text: text, done: false };
-        const insertIndex = Math.min(2, tasks.length); // 0=Now, 1=Next, 2=top of Short queue
-        tasks.splice(insertIndex, 0, newTask);
-        input.value = "";
-        render();
-        saveState();
-    }
-
-    function setFilter(newFilter) {
-        filter = newFilter;
-
-        const buttons = document.querySelectorAll(".filter-buttons button");
-        buttons.forEach(btn => {
-            const f = btn.getAttribute("data-filter") || "all";
-            if (f === newFilter) {
-                btn.classList.add("active");
-            } else if (newFilter === "all" && f === "all") {
-                btn.classList.add("active");
-            } else {
-                btn.classList.remove("active");
-            }
+          if (history.replaceState) {
+            history.replaceState(null, "", "#" + targetId);
+          } else {
+            window.location.hash = targetId;
+          }
         });
+      });
 
-        render();
-    }
+      // IntersectionObserver to sync tab highlight with scroll
+      const observerOptions = {
+        root: null,
+        rootMargin: "0px 0px -60% 0px",
+        threshold: 0.3,
+      };
 
-    // attach Enter key for add-task input
-    const newTaskInput = document.getElementById("new-task-input");
-    if (newTaskInput) {
-        newTaskInput.addEventListener("keydown", function(e) {
-            if (e.key === "Enter") {
-                addTask();
-            }
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            setActiveButton(id);
+          }
         });
-    }
+      }, observerOptions);
 
-    // initial render
-    render();
-</script>
+      sections.forEach((section) => observer.observe(section));
 
+      // On load, jump to hash if present
+      window.addEventListener("load", () => {
+        const hash = window.location.hash.replace("#", "");
+        if (hash) {
+          const section = document.getElementById(hash);
+          if (section) {
+            section.scrollIntoView({ behavior: "auto", block: "start" });
+            setActiveButton(hash);
+          }
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
